@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 
 class Pipe
@@ -9,6 +10,8 @@ public:
     void PrintToConsole() const;
     void SetUnderRepair(bool underRepair);
     bool IsUnderRepair() const;
+    void SaveToStream(std::ostream& stream) const;
+    bool LoadFromStream(std::istream& stream);
 
 private:
     std::string kilometerMark;

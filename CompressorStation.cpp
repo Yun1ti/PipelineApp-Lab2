@@ -37,3 +37,23 @@ bool CompressorStation::StopWorkshop()
     --workingWorkshopCount;
     return true;
 }
+
+void CompressorStation::SaveToStream(std::ostream& stream) const
+{
+    stream << name << "\n"
+           << workshopCount << "\n"
+           << workingWorkshopCount << "\n"
+           << stationClass << "\n";
+}
+
+bool CompressorStation::LoadFromStream(std::istream& stream)
+{
+    CompressorStation loadedStation;
+    if (!ReadNonEmptyLineFromStream(stream, loadedStation.name)
+        || !ReadNumberFromStream(stream, loadedStation.workshopCount, 1, MAX_WORKSHOP_COUNT)
+        || !ReadNumberFromStream(stream, loadedStation.workingWorkshopCount, 0, loadedStation.workshopCount)
+        || !ReadNumberFromStream(stream, loadedStation.stationClass, MIN_STATION_CLASS, MAX_STATION_CLASS))
+        return false;
+    *this = loadedStation;
+    return true;
+}

@@ -1,9 +1,14 @@
+#include <fstream>
 #include <iostream>
 #include <optional>
 
 #include "CompressorStation.h"
 #include "InputUtils.h"
 #include "Pipe.h"
+
+const std::string DATA_FILE_NAME = "pipeline_data.txt";
+const std::string PIPE_SECTION = "PIPE";
+const std::string STATION_SECTION = "STATION";
 
 enum MenuAction
 {
@@ -13,7 +18,9 @@ enum MenuAction
     SHOW_ALL,
     EDIT_PIPE,
     EDIT_STATION,
-    LAST_ACTION = EDIT_STATION
+    SAVE,
+    LOAD,
+    LAST_ACTION = LOAD
 };
 
 void PrintMenu()
@@ -24,6 +31,8 @@ void PrintMenu()
               << "3. Show all objects\n"
               << "4. Edit pipe\n"
               << "5. Edit compressor station\n"
+              << "6. Save to file\n"
+              << "7. Load from file\n"
               << "0. Exit\n";
 }
 
@@ -95,6 +104,85 @@ void EditStation(std::optional<CompressorStation>& station)
     }
 }
 
+void SaveData(const std::optional<Pipe>& pipe, const std::optional<CompressorStation>& station)
+{
+    if (!pipe && !station)
+    {
+        std::cout << "Error: nothing to save.\n";
+        return;
+    }
+    std::ofstream file(DATA_FILE_NAME);
+    if (!file)
+    {
+        std::cout << "Error: cannot open file " << DATA_FILE_NAME << " for writing.\n";
+        return;
+    }
+    if (pipe)
+    {
+        file << PIPE_SECTION << "\n";
+        pipe->SaveToStream(file);
+    }
+    if (station)
+    {
+        file << STATION_SECTION << "\n";
+        station->SaveToStream(file);
+    }
+    std::cout << (file ? "Data saved to " + DATA_FILE_NAME + ".\n" : "Error: failed to write data.\n");
+}
+
+void LoadData(std::optional<Pipe>& pipe, std::optional<CompressorStation>& station)
+{
+    std::ifstream file(DATA_FILE_NAME);
+    if (!file)
+    {
+        std::cout << "Error: cannot open file " << DATA_FILE_NAME << ".\n";
+        return;
+    }
+
+    std::optional<Pipe> loadedPipe;
+    std::optional<CompressorStation> loadedStation;
+    std::string sectionName;
+    while (ReadLineFromStream(file, sectionName))
+    {
+        if (sectionName.empty())
+            continue;
+        if (sectionName == PIPE_SECTION && !loadedPipe)
+        {
+            Pipe newPipe;
+            if (!newPipe.LoadFromStream(file))
+            {
+                std::cout << "Error: pipe data in file is corrupted. Nothing loaded.\n";
+                return;
+            }
+            loadedPipe = newPipe;
+        }
+        else if (sectionName == STATION_SECTION && !loadedStation)
+        {
+            CompressorStation newStation;
+            if (!newStation.LoadFromStream(file))
+            {
+                std::cout << "Error: compressor station data in file is corrupted. Nothing loaded.\n";
+                return;
+            }
+            loadedStation = newStation;
+        }
+        else
+        {
+            std::cout << "Error: unexpected data in file. Nothing loaded.\n";
+            return;
+        }
+    }
+
+    if (!loadedPipe && !loadedStation)
+    {
+        std::cout << "Error: file contains no objects.\n";
+        return;
+    }
+    pipe = loadedPipe;
+    station = loadedStation;
+    std::cout << "Data loaded from " << DATA_FILE_NAME << ".\n";
+}
+
 int main()
 {
     std::optional<Pipe> pipe;
@@ -121,6 +209,12 @@ int main()
                 break;
             case EDIT_STATION:
                 EditStation(station);
+                break;
+            case SAVE:
+                SaveData(pipe, station);
+                break;
+            case LOAD:
+                LoadData(pipe, station);
                 break;
             case EXIT:
                 return 0;

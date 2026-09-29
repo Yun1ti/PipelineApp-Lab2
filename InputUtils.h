@@ -14,6 +14,8 @@ public:
 std::string ReadLine();
 std::string ReadNonEmptyLine(const std::string& prompt);
 bool ReadYesNo(const std::string& prompt);
+bool ReadLineFromStream(std::istream& stream, std::string& line);
+bool ReadNonEmptyLineFromStream(std::istream& stream, std::string& line);
 
 template <typename T>
 bool TryParseNumber(const std::string& text, T& result)
@@ -40,4 +42,15 @@ T ReadNumber(const std::string& prompt, T minValue, T maxValue)
             return value;
         std::cout << "Error: enter a number from " << minValue << " to " << maxValue << ".\n";
     }
+}
+
+template <typename T>
+bool ReadNumberFromStream(std::istream& stream, T& result, T minValue, T maxValue)
+{
+    std::string line;
+    T value;
+    if (!ReadLineFromStream(stream, line) || !TryParseNumber(line, value) || value < minValue || value > maxValue)
+        return false;
+    result = value;
+    return true;
 }
