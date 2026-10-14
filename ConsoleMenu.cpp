@@ -23,6 +23,16 @@ namespace
         LAST_ACTION = LOAD
     };
 
+    enum BatchAction
+    {
+        BATCH_BACK = 0,
+        EDIT_ALL_FOUND,
+        EDIT_SELECTED,
+        DELETE_ALL_FOUND,
+        DELETE_SELECTED,
+        LAST_BATCH_ACTION = DELETE_SELECTED
+    };
+
     template <typename T>
     void PrintAll(const ObjectRegistry<T>& registry, const std::string& emptyMessage)
     {
@@ -252,7 +262,63 @@ void ConsoleMenu::SearchPipes()
         std::cout << "Error: there is no pipe yet.\n";
         return;
     }
-    PrintFound(network.Pipes(), FindPipes());
+    std::vector<int> foundIds = FindPipes();
+    PrintFound(network.Pipes(), foundIds);
+    if (!foundIds.empty())
+        BatchEditPipes(foundIds);
+}
+
+void ConsoleMenu::BatchEditPipes(const std::vector<int>& foundIds)
+{
+    std::cout << "1. Edit repair status of all found pipes\n"
+              << "2. Edit repair status of selected pipes\n"
+              << "3. Delete all found pipes\n"
+              << "4. Delete selected pipes\n"
+              << "0. Back\n";
+    int action = reader.ReadNumber("Select action: ", static_cast<int>(BATCH_BACK), static_cast<int>(LAST_BATCH_ACTION));
+    if (action == BATCH_BACK)
+        return;
+
+    bool isForAllFound = action == EDIT_ALL_FOUND || action == DELETE_ALL_FOUND;
+    std::vector<int> targetIds = isForAllFound ? foundIds : SelectPipeIds(foundIds);
+    if (action == EDIT_ALL_FOUND || action == EDIT_SELECTED)
+        SetPipesRepairStatus(targetIds);
+    else
+        DeletePipes(targetIds);
+}
+
+std::vector<int> ConsoleMenu::SelectPipeIds(const std::vector<int>& allowedIds)
+{
+    while (true)
+    {
+        std::vector<int> ids = reader.ReadIntList("Enter pipe IDs separated by spaces: ");
+        auto notAllowed = std::find_if(ids.begin(), ids.end(), [&allowedIds](int id)
+                                       { return !std::binary_search(allowedIds.begin(), allowedIds.end(), id); });
+        if (notAllowed == ids.end())
+        {
+            std::sort(ids.begin(), ids.end());
+            ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+            return ids;
+        }
+        std::cout << "Error: pipe #" << *notAllowed << " is not among the found pipes.\n";
+    }
+}
+
+void ConsoleMenu::SetPipesRepairStatus(const std::vector<int>& ids)
+{
+    bool underRepair = reader.ReadYesNo("Set these pipes under repair?");
+    for (int id : ids)
+        network.Pipes().Find(id)->SetUnderRepair(underRepair);
+    std::cout << "Updated pipes: " << ids.size() << "\n";
+}
+
+void ConsoleMenu::DeletePipes(const std::vector<int>& ids)
+{
+    if (!reader.ReadYesNo("Delete " + std::to_string(ids.size()) + " pipe(s)?"))
+        return;
+    for (int id : ids)
+        network.Pipes().Remove(id);
+    std::cout << "Deleted pipes: " << ids.size() << "\n";
 }
 
 void ConsoleMenu::SearchStations()

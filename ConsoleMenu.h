@@ -31,6 +31,10 @@ private:
     void SearchStations();
     std::vector<int> FindPipes();
     std::vector<int> FindStations();
+    void BatchEditPipes(const std::vector<int>& foundIds);
+    std::vector<int> SelectPipeIds(const std::vector<int>& allowedIds);
+    void SetPipesRepairStatus(const std::vector<int>& ids);
+    void DeletePipes(const std::vector<int>& ids);
     void SaveToFile();
     void LoadFromFile();
 
