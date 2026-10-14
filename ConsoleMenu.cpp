@@ -14,7 +14,9 @@ namespace
         EDIT_STATION,
         DELETE_PIPE,
         DELETE_STATION,
-        LAST_ACTION = DELETE_STATION
+        SAVE,
+        LOAD,
+        LAST_ACTION = LOAD
     };
 
     template <typename T>
@@ -59,6 +61,8 @@ void ConsoleMenu::PrintMainMenu() const
               << "5. Edit compressor station\n"
               << "6. Delete pipe\n"
               << "7. Delete compressor station\n"
+              << "8. Save to file\n"
+              << "9. Load from file\n"
               << "0. Exit\n";
 }
 
@@ -86,6 +90,12 @@ bool ConsoleMenu::ExecuteAction(int action)
         break;
     case DELETE_STATION:
         DeleteStation();
+        break;
+    case SAVE:
+        SaveToFile();
+        break;
+    case LOAD:
+        LoadFromFile();
         break;
     case EXIT:
         return false;
@@ -158,6 +168,39 @@ void ConsoleMenu::DeletePipe()
 void ConsoleMenu::DeleteStation()
 {
     DeleteObject(network.Stations(), "compressor station");
+}
+
+void ConsoleMenu::SaveToFile()
+{
+    if (network.IsEmpty())
+    {
+        std::cout << "Error: nothing to save.\n";
+        return;
+    }
+    std::string fileName = reader.ReadNonEmptyLine("File name: ");
+    if (network.SaveToFile(fileName))
+        std::cout << "Data saved to " << fileName << ".\n";
+    else
+        std::cout << "Error: cannot write file " << fileName << ".\n";
+}
+
+void ConsoleMenu::LoadFromFile()
+{
+    if (!network.IsEmpty() && !reader.ReadYesNo("Current data will be replaced. Continue?"))
+        return;
+    std::string fileName = reader.ReadNonEmptyLine("File name: ");
+    switch (network.LoadFromFile(fileName))
+    {
+    case LoadResult::SUCCESS:
+        std::cout << "Data loaded from " << fileName << ".\n";
+        break;
+    case LoadResult::CANNOT_OPEN:
+        std::cout << "Error: cannot open file " << fileName << ".\n";
+        break;
+    case LoadResult::CORRUPTED:
+        std::cout << "Error: file " << fileName << " is corrupted. Current data was kept.\n";
+        break;
+    }
 }
 
 template <typename T>

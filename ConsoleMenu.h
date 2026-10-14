@@ -26,6 +26,8 @@ private:
     void EditStation();
     void DeletePipe();
     void DeleteStation();
+    void SaveToFile();
+    void LoadFromFile();
 
     template <typename T>
     std::optional<int> SelectExistingId(const ObjectRegistry<T>& registry, const std::string& objectName);

@@ -4,6 +4,15 @@
 #include "ObjectRegistry.h"
 #include "Pipe.h"
 
+#include <string>
+
+enum class LoadResult
+{
+    SUCCESS,
+    CANNOT_OPEN,
+    CORRUPTED
+};
+
 class PipelineNetwork
 {
 public:
@@ -12,6 +21,8 @@ public:
     ObjectRegistry<CompressorStation>& Stations();
     const ObjectRegistry<CompressorStation>& Stations() const;
     bool IsEmpty() const;
+    bool SaveToFile(const std::string& fileName) const;
+    LoadResult LoadFromFile(const std::string& fileName);
 
 private:
     ObjectRegistry<Pipe> pipes;
