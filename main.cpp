@@ -9,8 +9,14 @@
 std::string MakeLogFileName()
 {
     std::time_t now = std::time(nullptr);
+    std::tm localTime{};
+#ifdef _WIN32
+    localtime_s(&localTime, &now);
+#else
+    localtime_r(&now, &localTime);
+#endif
     std::ostringstream fileName;
-    fileName << "log_" << std::put_time(std::localtime(&now), "%Y%m%d_%H%M%S") << ".txt";
+    fileName << "log_" << std::put_time(&localTime, "%Y%m%d_%H%M%S") << ".txt";
     return fileName.str();
 }
 
