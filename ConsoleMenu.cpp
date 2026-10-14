@@ -1,5 +1,7 @@
 #include "ConsoleMenu.h"
 
+#include <algorithm>
+#include <cctype>
 #include <climits>
 
 namespace
@@ -14,6 +16,8 @@ namespace
         EDIT_STATION,
         DELETE_PIPE,
         DELETE_STATION,
+        SEARCH_PIPES,
+        SEARCH_STATIONS,
         SAVE,
         LOAD,
         LAST_ACTION = LOAD
@@ -29,6 +33,26 @@ namespace
         }
         for (const auto& [id, object] : registry.GetAll())
             std::cout << object << "\n";
+    }
+
+    template <typename T>
+    void PrintFound(const ObjectRegistry<T>& registry, const std::vector<int>& ids)
+    {
+        std::cout << "Found: " << ids.size() << "\n";
+        for (int id : ids)
+            std::cout << registry.GetAll().at(id) << "\n";
+    }
+
+    std::string ToLower(std::string text)
+    {
+        std::transform(text.begin(), text.end(), text.begin(),
+                       [](unsigned char symbol) { return static_cast<char>(std::tolower(symbol)); });
+        return text;
+    }
+
+    bool ContainsIgnoreCase(const std::string& text, const std::string& pattern)
+    {
+        return ToLower(text).find(ToLower(pattern)) != std::string::npos;
     }
 }
 
@@ -61,8 +85,10 @@ void ConsoleMenu::PrintMainMenu() const
               << "5. Edit compressor station\n"
               << "6. Delete pipe\n"
               << "7. Delete compressor station\n"
-              << "8. Save to file\n"
-              << "9. Load from file\n"
+              << "8. Search pipes (batch editing)\n"
+              << "9. Search compressor stations\n"
+              << "10. Save to file\n"
+              << "11. Load from file\n"
               << "0. Exit\n";
 }
 
@@ -90,6 +116,12 @@ bool ConsoleMenu::ExecuteAction(int action)
         break;
     case DELETE_STATION:
         DeleteStation();
+        break;
+    case SEARCH_PIPES:
+        SearchPipes();
+        break;
+    case SEARCH_STATIONS:
+        SearchStations();
         break;
     case SAVE:
         SaveToFile();
@@ -168,6 +200,69 @@ void ConsoleMenu::DeletePipe()
 void ConsoleMenu::DeleteStation()
 {
     DeleteObject(network.Stations(), "compressor station");
+}
+
+std::vector<int> ConsoleMenu::FindPipes()
+{
+    std::cout << "1. By kilometer mark (name)\n"
+              << "2. By repair status\n"
+              << "3. All pipes\n";
+    switch (reader.ReadNumber("Select filter: ", 1, 3))
+    {
+    case 1:
+    {
+        std::string pattern = reader.ReadNonEmptyLine("Name contains: ");
+        return network.Pipes().FindIds([&pattern](const Pipe& pipe)
+                                       { return ContainsIgnoreCase(pipe.GetKilometerMark(), pattern); });
+    }
+    case 2:
+    {
+        bool underRepair = reader.ReadYesNo("Find pipes under repair?");
+        return network.Pipes().FindIds([underRepair](const Pipe& pipe)
+                                       { return pipe.IsUnderRepair() == underRepair; });
+    }
+    default:
+        return network.Pipes().FindIds([](const Pipe&) { return true; });
+    }
+}
+
+std::vector<int> ConsoleMenu::FindStations()
+{
+    std::cout << "1. By name\n"
+              << "2. By percent of idle workshops\n";
+    if (reader.ReadNumber("Select filter: ", 1, 2) == 1)
+    {
+        std::string pattern = reader.ReadNonEmptyLine("Name contains: ");
+        return network.Stations().FindIds([&pattern](const CompressorStation& station)
+                                          { return ContainsIgnoreCase(station.GetName(), pattern); });
+    }
+    double minPercent = reader.ReadNumber("Minimum idle percent (0-100): ", 0.0, 100.0);
+    double maxPercent = reader.ReadNumber("Maximum idle percent: ", minPercent, 100.0);
+    return network.Stations().FindIds([minPercent, maxPercent](const CompressorStation& station)
+                                      {
+                                          double idlePercent = station.GetIdleWorkshopPercent();
+                                          return idlePercent >= minPercent && idlePercent <= maxPercent;
+                                      });
+}
+
+void ConsoleMenu::SearchPipes()
+{
+    if (network.Pipes().IsEmpty())
+    {
+        std::cout << "Error: there is no pipe yet.\n";
+        return;
+    }
+    PrintFound(network.Pipes(), FindPipes());
+}
+
+void ConsoleMenu::SearchStations()
+{
+    if (network.Stations().IsEmpty())
+    {
+        std::cout << "Error: there is no compressor station yet.\n";
+        return;
+    }
+    PrintFound(network.Stations(), FindStations());
 }
 
 void ConsoleMenu::SaveToFile()

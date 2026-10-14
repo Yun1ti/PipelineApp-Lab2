@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "InputReader.h"
 #include "PipelineNetwork.h"
@@ -26,6 +27,10 @@ private:
     void EditStation();
     void DeletePipe();
     void DeleteStation();
+    void SearchPipes();
+    void SearchStations();
+    std::vector<int> FindPipes();
+    std::vector<int> FindStations();
     void SaveToFile();
     void LoadFromFile();
 
