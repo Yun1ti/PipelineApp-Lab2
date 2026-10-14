@@ -9,3 +9,5 @@ Release/
 *.obj
 *.user
 pipeline_data.txt
+log_*.txt
+*.dat

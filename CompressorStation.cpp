@@ -1,25 +1,28 @@
 #include "CompressorStation.h"
-#include "InputUtils.h"
+
+#include <climits>
 
 const int MAX_WORKSHOP_COUNT = 100;
 const int MIN_STATION_CLASS = 1;
 const int MAX_STATION_CLASS = 5;
 
-void CompressorStation::ReadFromConsole()
+CompressorStation::CompressorStation(int stationId) : id(stationId)
 {
-    name = ReadNonEmptyLine("Station name: ");
-    workshopCount = ReadNumber("Number of workshops: ", 1, MAX_WORKSHOP_COUNT);
-    workingWorkshopCount = ReadNumber("Number of working workshops: ", 0, workshopCount);
-    stationClass = ReadNumber("Station class (1-5): ", MIN_STATION_CLASS, MAX_STATION_CLASS);
 }
 
-void CompressorStation::PrintToConsole() const
+int CompressorStation::GetId() const
 {
-    std::cout << "Compressor station\n"
-              << "  Name:              " << name << "\n"
-              << "  Workshops:         " << workshopCount << "\n"
-              << "  Working workshops: " << workingWorkshopCount << "\n"
-              << "  Station class:     " << stationClass << "\n";
+    return id;
+}
+
+const std::string& CompressorStation::GetName() const
+{
+    return name;
+}
+
+double CompressorStation::GetIdleWorkshopPercent() const
+{
+    return 100.0 * (workshopCount - workingWorkshopCount) / workshopCount;
 }
 
 bool CompressorStation::StartWorkshop()
@@ -38,22 +41,41 @@ bool CompressorStation::StopWorkshop()
     return true;
 }
 
-void CompressorStation::SaveToStream(std::ostream& stream) const
+void CompressorStation::ReadFromConsole(InputReader& reader)
 {
-    stream << name << "\n"
+    name = reader.ReadNonEmptyLine("Station name: ");
+    workshopCount = reader.ReadNumber("Number of workshops: ", 1, MAX_WORKSHOP_COUNT);
+    workingWorkshopCount = reader.ReadNumber("Number of working workshops: ", 0, workshopCount);
+    stationClass = reader.ReadNumber("Station class (1-5): ", MIN_STATION_CLASS, MAX_STATION_CLASS);
+}
+
+void CompressorStation::SaveTo(std::ostream& stream) const
+{
+    stream << id << "\n"
+           << name << "\n"
            << workshopCount << "\n"
            << workingWorkshopCount << "\n"
            << stationClass << "\n";
 }
 
-bool CompressorStation::LoadFromStream(std::istream& stream)
+bool CompressorStation::LoadFrom(std::istream& stream, CompressorStation& station)
 {
     CompressorStation loadedStation;
-    if (!ReadNonEmptyLineFromStream(stream, loadedStation.name)
+    if (!ReadNumberFromStream(stream, loadedStation.id, 1, INT_MAX)
+        || !ReadNonEmptyLineFromStream(stream, loadedStation.name)
         || !ReadNumberFromStream(stream, loadedStation.workshopCount, 1, MAX_WORKSHOP_COUNT)
         || !ReadNumberFromStream(stream, loadedStation.workingWorkshopCount, 0, loadedStation.workshopCount)
         || !ReadNumberFromStream(stream, loadedStation.stationClass, MIN_STATION_CLASS, MAX_STATION_CLASS))
         return false;
-    *this = loadedStation;
+    station = loadedStation;
     return true;
+}
+
+std::ostream& operator<<(std::ostream& stream, const CompressorStation& station)
+{
+    return stream << "Station #" << station.id
+                  << " | name: " << station.name
+                  << " | workshops: " << station.workingWorkshopCount << "/" << station.workshopCount << " working"
+                  << " | idle: " << station.GetIdleWorkshopPercent() << "%"
+                  << " | class: " << station.stationClass;
 }
