@@ -1,35 +1,36 @@
-#include <ctime>
-#include <iomanip>
+#include <fstream>
 #include <iostream>
-#include <sstream>
+#include <string>
 
 #include "ConsoleMenu.h"
 #include "InputReader.h"
 
-std::string MakeLogFileName()
-{
-    std::time_t now = std::time(nullptr);
-    std::tm localTime{};
-#ifdef _WIN32
-    localtime_s(&localTime, &now);
-#else
-    localtime_r(&now, &localTime);
-#endif
-    std::ostringstream fileName;
-    fileName << "log_" << std::put_time(&localTime, "%Y%m%d_%H%M%S") << ".txt";
-    return fileName.str();
-}
+const std::string LOG_FILE_NAME = "log.txt";
 
-int main()
+// Usage:
+//   PipelineApp.exe            - interactive mode, user input is written to log.txt
+//   PipelineApp.exe log.txt    - replay mode, actions are read from the given file
+int main(int argc, char* argv[])
 {
-    std::string logFileName = MakeLogFileName();
-    InputReader reader(std::cin, logFileName);
-    if (reader.IsLogging())
-        std::cout << "User input is logged to " << logFileName << "\n";
+    if (argc > 1)
+    {
+        std::ifstream replayFile(argv[1]);
+        if (!replayFile)
+        {
+            std::cout << "Error: cannot open file " << argv[1] << "\n";
+            return 1;
+        }
+        std::cout << "Replaying actions from " << argv[1] << "\n";
+        InputReader reader(replayFile, true);
+        ConsoleMenu(reader).Run();
+        return 0;
+    }
+
+    InputReader reader(std::cin, false);
+    if (reader.StartLogging(LOG_FILE_NAME))
+        std::cout << "User input is logged to " << LOG_FILE_NAME << "\n";
     else
-        std::cout << "Warning: cannot create log file " << logFileName << "\n";
-
-    ConsoleMenu menu(reader);
-    menu.Run();
+        std::cout << "Warning: cannot create log file " << LOG_FILE_NAME << "\n";
+    ConsoleMenu(reader).Run();
     return 0;
 }

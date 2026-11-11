@@ -14,12 +14,16 @@ public:
     InputClosedError() : std::runtime_error("Input stream closed") {}
 };
 
+// Reads user input line by line.
+// In interactive mode every entered line is written to the log file as is.
+// In replay mode (input from a log file) every line is echoed to the console
+// so the replayed session looks like it was typed by the user.
 class InputReader
 {
 public:
-    InputReader(std::istream& input, const std::string& logFileName);
+    InputReader(std::istream& input, bool echoInput);
 
-    bool IsLogging() const;
+    bool StartLogging(const std::string& logFileName);
     std::string ReadLine();
     std::string ReadNonEmptyLine(const std::string& prompt);
     bool ReadYesNo(const std::string& prompt);
@@ -40,5 +44,6 @@ public:
 
 private:
     std::istream& input;
+    bool echoInput;
     std::ofstream log;
 };

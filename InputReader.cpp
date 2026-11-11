@@ -1,12 +1,13 @@
 #include "InputReader.h"
 
-InputReader::InputReader(std::istream& inputStream, const std::string& logFileName)
-    : input(inputStream), log(logFileName)
+InputReader::InputReader(std::istream& inputStream, bool echo)
+    : input(inputStream), echoInput(echo)
 {
 }
 
-bool InputReader::IsLogging() const
+bool InputReader::StartLogging(const std::string& logFileName)
 {
+    log.open(logFileName, std::ios::trunc);
     return log.is_open();
 }
 
@@ -15,7 +16,9 @@ std::string InputReader::ReadLine()
     std::string line;
     if (!ReadLineFromStream(input, line))
         throw InputClosedError();
-    if (log)
+    if (echoInput)
+        std::cout << line << "\n";
+    if (log.is_open())
         log << line << std::endl;
     return line;
 }

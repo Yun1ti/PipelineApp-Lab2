@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run (input is logged to log.txt)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/PipelineApp.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build"
+        },
+        {
+            "name": "Replay log.txt",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/PipelineApp.exe",
+            "args": ["log.txt"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "build"
+        }
+    ]
+}
